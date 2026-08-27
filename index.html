@@ -488,15 +488,21 @@ async function sbFetch(table, method='GET', body=null, query=''){
     'Prefer': method==='POST'?'return=representation':'return=representation'
   };
   const res = await fetch(url, {method, headers, body: body?JSON.stringify(body):null});
-  if(!res.ok){ const e=await res.text(); console.error('SB error:',e); return null; }
+  if(!res.ok){
+    const e=await res.text();
+    console.error('SB error:',e);
+    if(typeof showToast==='function') showToast(`⚠ Error guardando en la nube (${table})`);
+    if(typeof showSyncStatus==='function') showSyncStatus(`⚠ Error al sincronizar ${table}`,false,true);
+    return null;
+  }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
 
 async function sbGet(table, query=''){ return sbFetch(table,'GET',null,query); }
-async function sbUpsert(table, data){
+async function sbUpsert(table, data, conflictCol='id'){
   return sbFetch(table,'POST', Array.isArray(data)?data:[data],
-    '?on_conflict=id');
+    `?on_conflict=${conflictCol}`);
 }
 async function sbDelete(table, id){
   return sbFetch(table,'DELETE',null,`?id=eq.${id}`);
@@ -636,7 +642,7 @@ async function sbSavePool(){
   saveAll();
   if(!_sbReady)return;
   const rows=Object.entries(batchPool).map(([k,v])=>{return{rec_id:parseInt(k),qty:v}});
-  if(rows.length)await sbUpsert('batch_pool',rows);
+  if(rows.length)await sbUpsert('batch_pool',rows,'rec_id');
 }
 async function sbSaveCfg(){
   ss('aldar_cfg',cfg);
