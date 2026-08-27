@@ -543,7 +543,7 @@ async function loadFromSupabase(){
     if(cliRows&&cliRows.length){ clients=cliRows.map(rowToCli); ss('aldar_cli',clients); }
     if(ordRows&&ordRows.length){ orders=ordRows.map(rowToOrd); ss('aldar_ord',orders); }
     if(purRows&&purRows.length){ purchases=purRows.map(rowToPur); ss('aldar_comp',purchases); }
-    if(poolRows&&poolRows.length){ batchPool={}; poolRows.forEach(r=>batchPool[r.rec_id]=r.qty); ss('aldar_pool',batchPool); }
+    if(poolRows){ batchPool={}; poolRows.forEach(r=>batchPool[r.rec_id]=r.qty); ss('aldar_pool',batchPool); }
     if(cfgRows&&cfgRows.length){
       const c=cfgRows[0];
       cfg={waNum:c.wa_num,waOn:c.wa_on,bizName:c.biz_name,bizPhone:c.biz_phone||'',bizAddr:c.biz_addr||''};
