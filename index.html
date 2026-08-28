@@ -112,9 +112,11 @@ textarea.fc{resize:vertical;min-height:70px;}
 .rcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:10px;}
 .rimg{width:100%;height:160px;object-fit:cover;border-radius:11px;margin-bottom:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:60px;}
 .rimg-placeholder{width:100%;height:120px;border-radius:11px;margin-bottom:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:50px;border:2px dashed var(--border);}
-/* En pantallas de escritorio, las fotos de receta no se estiran a todo lo ancho: se limitan y centran */
+/* En pantallas de escritorio, toda la app se centra en una columna cómoda en vez de estirarse a todo el ancho */
 @media (min-width:700px){
-  .recipe-photo{max-width:420px!important;width:100%!important;margin-left:auto!important;margin-right:auto!important;display:block!important;}
+  .hdr{max-width:640px;margin:0 auto;}
+  .pg{max-width:640px;margin:0 auto;}
+  .recipe-photo{max-width:100%!important;width:100%!important;margin-left:auto!important;margin-right:auto!important;display:block!important;}
 }
 /* TOAST */
 .toast{position:fixed;bottom:calc(var(--nav)+78px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);padding:9px 18px;border-radius:28px;font-size:12px;z-index:300;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none;}
