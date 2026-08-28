@@ -213,6 +213,24 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0;}
   <div id="compList"></div>
 </div>
 
+<div class="pg" id="pg-rep">
+  <div class="chips" id="repChips">
+    <div class="chip" onclick="filterRep('semana',this)">Esta semana</div>
+    <div class="chip on" onclick="filterRep('mes',this)">Este mes</div>
+    <div class="chip" onclick="filterRep('all',this)">Todo</div>
+  </div>
+  <div class="srow">
+    <div class="stat"><div class="sv" id="repVentas" style="color:var(--accent2)">$0</div><div class="sl">Ventas</div></div>
+    <div class="stat"><div class="sv" id="repCompras" style="color:#c0392b">$0</div><div class="sl">Compras de insumos</div></div>
+  </div>
+  <div class="srow">
+    <div class="stat"><div class="sv" id="repUtilidad">$0</div><div class="sl">Utilidad generada</div></div>
+    <div class="stat"><div class="sv" id="repMargen">0%</div><div class="sl">Margen sobre ventas</div></div>
+  </div>
+  <div class="slbl">📊 Detalle del período</div>
+  <div id="repDetail"></div>
+</div>
+
 <div class="pg" id="pg-cfg">
   <div class="card">
     <div class="slbl" style="margin-top:0">📱 NOTIFICACIONES WHATSAPP</div>
@@ -275,6 +293,10 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <button onclick="goFromMas('comp')" style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:18px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
       <span style="font-size:12px;color:var(--text);font-weight:500">Compras</span>
+    </button>
+    <button onclick="goFromMas('rep')" style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:18px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span style="font-size:12px;color:var(--text);font-weight:500">Reportes</span>
     </button>
     <button onclick="goFromMas('cfg')" style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:18px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -485,13 +507,13 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0;}
 const SB_URL='https://yapzmtyjvvciamtufxzb.supabase.co';
 const SB_KEY='sb_publishable_ABXCSiucUirTVgg5PXIQYg_dY2eeCoR';
 
-async function sbFetch(table, method='GET', body=null, query=''){
+async function sbFetch(table, method='GET', body=null, query='', preferExtra=''){
   const url=`${SB_URL}/rest/v1/${table}${query}`;
   const headers={
     'apikey': SB_KEY,
     'Authorization': `Bearer ${SB_KEY}`,
     'Content-Type': 'application/json',
-    'Prefer': method==='POST'?'return=representation':'return=representation'
+    'Prefer': `return=representation${preferExtra?','+preferExtra:''}`
   };
   const res = await fetch(url, {method, headers, body: body?JSON.stringify(body):null});
   if(!res.ok){
@@ -508,7 +530,7 @@ async function sbFetch(table, method='GET', body=null, query=''){
 async function sbGet(table, query=''){ return sbFetch(table,'GET',null,query); }
 async function sbUpsert(table, data, conflictCol='id'){
   return sbFetch(table,'POST', Array.isArray(data)?data:[data],
-    `?on_conflict=${conflictCol}`);
+    `?on_conflict=${conflictCol}`, 'resolution=merge-duplicates');
 }
 async function sbDelete(table, id){
   return sbFetch(table,'DELETE',null,`?id=eq.${id}`);
@@ -782,8 +804,8 @@ function findInvByName(name){
 function getInvItem(ing){return ing.invId?findInvById(ing.invId):findInvByName(ing.name);}
 
 // ── NAV ──
-const TITLES={home:'Aldar Repostería',inv:'Inventario',rec:'Recetas',ord:'Órdenes',cli:'Clientes',comp:'Compras',cfg:'Configuración'};
-const SUBS={home:'Control de Inventario',inv:'Todos los insumos',rec:'Catálogo de recetas',ord:'Historial de órdenes',cli:'Clientes y puntos de entrega',comp:'Entradas de insumos y gastos',cfg:'Ajustes generales'};
+const TITLES={home:'Aldar Repostería',inv:'Inventario',rec:'Recetas',ord:'Órdenes',cli:'Clientes',comp:'Compras',rep:'Reportes',cfg:'Configuración'};
+const SUBS={home:'Control de Inventario',inv:'Todos los insumos',rec:'Catálogo de recetas',ord:'Historial de órdenes',cli:'Clientes y puntos de entrega',comp:'Entradas de insumos y gastos',rep:'Ventas vs. compras y utilidad',cfg:'Ajustes generales'};
 
 function go(page,btn){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
@@ -1532,6 +1554,43 @@ function filterComp(f,el){
   el.classList.add('on');renderComp();
 }
 
+// ══ REPORTES ══
+let _repFilter='mes';
+function renderRep(){
+  let ordsF,pursF;
+  if(_repFilter==='mes'){
+    ordsF=orders.filter(o=>!o.cancelled&&isThisMonth(o.ts));
+    pursF=purchases.filter(p=>isThisMonth(p.ts));
+  }else if(_repFilter==='semana'){
+    ordsF=orders.filter(o=>!o.cancelled&&isThisWeek(o.ts));
+    pursF=purchases.filter(p=>isThisWeek(p.ts));
+  }else{
+    ordsF=orders.filter(o=>!o.cancelled);
+    pursF=purchases;
+  }
+  const ventas=ordsF.reduce((s,o)=>s+(o.price||0),0);
+  const compras=pursF.reduce((s,p)=>s+(p.total||0),0);
+  const utilidad=ventas-compras;
+  const margen=ventas>0?(utilidad/ventas*100):0;
+  document.getElementById('repVentas').textContent=fmtMoney(ventas);
+  document.getElementById('repCompras').textContent=fmtMoney(compras);
+  const uEl=document.getElementById('repUtilidad');
+  uEl.textContent=fmtMoney(utilidad);
+  uEl.style.color=utilidad>=0?'#2e7d4f':'#c0392b';
+  document.getElementById('repMargen').textContent=margen.toFixed(0)+'%';
+  const avgTicket=ordsF.length?ventas/ordsF.length:0;
+  document.getElementById('repDetail').innerHTML=`
+    <div class="ocard"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--muted)">Órdenes contabilizadas</span><b>${ordsF.length}</b></div></div>
+    <div class="ocard"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--muted)">Compras registradas</span><b>${pursF.length}</b></div></div>
+    <div class="ocard"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--muted)">Ticket promedio de venta</span><b>${fmtMoney(avgTicket)}</b></div></div>
+  `;
+}
+function filterRep(f,el){
+  _repFilter=f;
+  document.querySelectorAll('#repChips .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');renderRep();
+}
+
 function openNewComp(){
   document.getElementById('compMTitle').textContent='Nueva Entrada de Compra';
   document.getElementById('compMId').value='';
@@ -1659,14 +1718,15 @@ function goFromMas(page){
   document.getElementById('nb-mas').classList.add('on');
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.getElementById('pg-'+page).classList.add('on');
-  const TITLES={cli:'Clientes',comp:'Compras',cfg:'Configuración'};
-  const SUBS={cli:'Clientes y puntos de entrega',comp:'Entradas de insumos y gastos',cfg:'Ajustes generales'};
+  const TITLES={cli:'Clientes',comp:'Compras',rep:'Reportes',cfg:'Configuración'};
+  const SUBS={cli:'Clientes y puntos de entrega',comp:'Entradas de insumos y gastos',rep:'Ventas vs. compras y utilidad',cfg:'Ajustes generales'};
   document.getElementById('htitle').textContent=TITLES[page];
   document.getElementById('hsub').textContent=SUBS[page];
   document.getElementById('fabMain').style.display=['cli','comp'].includes(page)?'flex':'none';
   document.getElementById('fabSec').style.display='none';
   if(page==='cli')renderCli();
   if(page==='comp')renderComp();
+  if(page==='rep')renderRep();
   if(page==='cfg')loadCfg();
 }
 
