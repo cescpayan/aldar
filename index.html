@@ -112,6 +112,10 @@ textarea.fc{resize:vertical;min-height:70px;}
 .rcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:10px;}
 .rimg{width:100%;height:160px;object-fit:cover;border-radius:11px;margin-bottom:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:60px;}
 .rimg-placeholder{width:100%;height:120px;border-radius:11px;margin-bottom:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:50px;border:2px dashed var(--border);}
+/* En pantallas de escritorio, las fotos de receta no se estiran a todo lo ancho: se limitan y centran */
+@media (min-width:700px){
+  .recipe-photo{max-width:420px!important;width:100%!important;margin-left:auto!important;margin-right:auto!important;display:block!important;}
+}
 /* TOAST */
 .toast{position:fixed;bottom:calc(var(--nav)+78px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);padding:9px 18px;border-radius:28px;font-size:12px;z-index:300;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none;}
 .toast.on{opacity:1;}
@@ -735,7 +739,13 @@ const DEF_RECIPES=[
 
 // ── STORAGE ──
 function ls(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch{return def;}}
-function ss(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function ss(k,v){
+  try{localStorage.setItem(k,JSON.stringify(v));}
+  catch(e){
+    console.error('Storage error:',e);
+    if(typeof showToast==='function') showToast('⚠ No se pudo guardar localmente (memoria llena)');
+  }
+}
 
 let inv=ls('aldar_inv',DEF_INV);
 let purchases=ls('aldar_comp',[]);
@@ -928,7 +938,7 @@ let _editRecId=null,_recImgData='';
 function renderRec(){
   document.getElementById('recList').innerHTML=recipes.length?recipes.map(r=>{
     const cost=calcRecipeCostVal(r);
-    const imgHtml=r.img?`<img src="${r.img}" style="width:100%;height:140px;object-fit:cover;border-radius:11px;margin-bottom:10px">`:`<div class="rimg-placeholder">${r.emoji}</div>`;
+    const imgHtml=r.img?`<img src="${r.img}" class="recipe-photo" style="width:100%;height:140px;object-fit:cover;border-radius:11px;margin-bottom:10px">`:`<div class="rimg-placeholder">${r.emoji}</div>`;
     // production stats
     const myOrds=orders.filter(o=>!o.cancelled&&o.recId===r.id);
     const thisWeek=myOrds.filter(o=>isThisWeek(o.ts)).length;
@@ -1055,7 +1065,7 @@ function openEditRec(id){
   document.getElementById('recMDesc').value=r.desc||'';
   document.getElementById('recMPrice').value=r.price||'';
   document.getElementById('recIngRows').innerHTML='';
-  if(r.img){const el=document.getElementById('recImgPrev');el.innerHTML=`<img src="${r.img}" style="width:100%;height:100%;object-fit:cover;border-radius:11px">`;el.className='rimg';}
+  if(r.img){const el=document.getElementById('recImgPrev');el.innerHTML=`<img src="${r.img}" class="recipe-photo" style="width:100%;height:100%;object-fit:cover;border-radius:11px">`;el.className='rimg';}
   else{document.getElementById('recImgPrev').innerHTML=r.emoji;document.getElementById('recImgPrev').className='rimg-placeholder';}
   r.ings.forEach(ing=>addIngRow(ing.invId,ing.qty,ing.unit));
   document.getElementById('recMDel').style.display='block';
@@ -1065,14 +1075,27 @@ function openEditRec(id){
 function loadRecipeImg(){
   const f=document.getElementById('recImgFile').files[0];
   if(!f)return;
-  const r=new FileReader();
-  r.onload=e=>{
-    _recImgData=e.target.result;
-    const el=document.getElementById('recImgPrev');
-    el.innerHTML=`<img src="${_recImgData}" style="width:100%;height:100%;object-fit:cover;border-radius:11px">`;
-    el.className='rimg';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const maxW=700;
+      const scale=Math.min(1,maxW/img.width);
+      const canvas=document.createElement('canvas');
+      canvas.width=img.width*scale;
+      canvas.height=img.height*scale;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      _recImgData=canvas.toDataURL('image/jpeg',0.75);
+      const el=document.getElementById('recImgPrev');
+      el.innerHTML=`<img src="${_recImgData}" class="recipe-photo" style="width:100%;height:100%;object-fit:cover;border-radius:11px">`;
+      el.className='rimg';
+    };
+    img.onerror=()=>showToast('⚠ No se pudo leer la imagen');
+    img.src=e.target.result;
   };
-  r.readAsDataURL(f);
+  reader.onerror=()=>showToast('⚠ No se pudo leer el archivo');
+  reader.readAsDataURL(f);
 }
 
 function addIngRow(invId='',qty='',unit='gr'){
