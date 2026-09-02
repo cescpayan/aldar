@@ -500,8 +500,13 @@ function deleteInvItem(){
 // ══ RECIPES ══
 let _editRecId=null,_recImgData='';
 
+let _recQ='';
+function filterRec(){_recQ=document.getElementById('recQ').value;renderRec();}
+
 function renderRec(){
-  document.getElementById('recList').innerHTML=recipes.length?recipes.map(r=>{
+  const q=_recQ.trim().toLowerCase();
+  const list=q?recipes.filter(r=>r.name.toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q)||(r.desc||'').toLowerCase().includes(q)):recipes;
+  document.getElementById('recList').innerHTML=list.length?list.map(r=>{
     const cost=calcRecipeCostVal(r);
     const imgHtml=r.img?`<img src="${r.img}" class="recipe-photo" style="width:100%;height:140px;object-fit:cover;border-radius:11px;margin-bottom:10px">`:`<div class="rimg-placeholder">${r.emoji}</div>`;
     // production stats
@@ -533,7 +538,7 @@ function renderRec(){
         <button class="btn bg bsm" style="flex:1" onclick="produceRec(${r.id})">🍳 Producir lote</button>
       </div>
     </div>`;
-  }).join(''):'<div class="empty"><div>🍰</div>No hay recetas. Toca + para crear.</div>';
+  }).join(''):(q?'<div class="empty"><div>🔍</div>Sin resultados para "'+_recQ+'"</div>':'<div class="empty"><div>🍰</div>No hay recetas. Toca + para crear.</div>');
 }
 
 function isThisWeek(ts){if(!ts)return false;const d=new Date(ts),n=new Date();const s=new Date(n);s.setDate(n.getDate()-7);return d>=s;}
