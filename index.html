@@ -420,7 +420,10 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0;}
 <div class="ov" id="ovRec">
 <div class="modal">
   <div class="mh"></div>
-  <div class="mt" id="recMTitle">Nueva Receta</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+    <div class="mt" id="recMTitle" style="margin-bottom:0">Nueva Receta</div>
+    <button onclick="closeOv('ovRec')" aria-label="Cerrar" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:22px;line-height:1;padding:4px 6px;flex-shrink:0">✕</button>
+  </div>
   <input type="hidden" id="recMId">
   <div class="fg"><label class="fl">FOTO DEL PRODUCTO</label>
     <div id="recImgPrev" class="rimg-placeholder">📷</div>
